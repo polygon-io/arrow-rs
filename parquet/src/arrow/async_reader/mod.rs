@@ -227,6 +227,13 @@ impl<T: AsyncFileReader + Send + 'static> ArrowReaderBuilder<AsyncReader<T>> {
     /// Create a new [`ParquetRecordBatchStreamBuilder`] with the provided parquet file
     pub async fn new(mut input: T) -> Result<Self> {
         let metadata = input.get_metadata().await?;
+        Self::new_with_metadata(input, metadata).await
+    }
+
+    pub async fn new_with_metadata(
+        input: T,
+        metadata: Arc<ParquetMetaData>,
+    ) -> Result<Self> {
         Self::new_builder(AsyncReader(input), metadata, Default::default())
     }
 
@@ -234,8 +241,15 @@ impl<T: AsyncFileReader + Send + 'static> ArrowReaderBuilder<AsyncReader<T>> {
         mut input: T,
         options: ArrowReaderOptions,
     ) -> Result<Self> {
-        let mut metadata = input.get_metadata().await?;
+        let metadata = input.get_metadata().await?;
+        Self::new_with_options_and_metadata(input, options, metadata).await
+    }
 
+    pub async fn new_with_options_and_metadata(
+        mut input: T,
+        options: ArrowReaderOptions,
+        mut metadata: Arc<ParquetMetaData>,
+    ) -> Result<Self> {
         if options.page_index
             && metadata
                 .page_indexes()
